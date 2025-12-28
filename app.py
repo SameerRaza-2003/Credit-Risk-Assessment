@@ -17,7 +17,7 @@ warnings.filterwarnings(
 # PAGE CONFIG
 # ============================================================
 st.set_page_config(
-    page_title="Probability of Default Dashboard",
+    page_title="Credit Risk Assessment",
     page_icon="📊",
     layout="centered"
 )
