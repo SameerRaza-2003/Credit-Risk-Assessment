@@ -1,0 +1,27 @@
+{
+  "Business Type": [
+    "INDIVIDUAL",
+    "PARTNERSHIP",
+    "PROPRIETORSHIP",
+    "PVT LTD COMPANIES"
+  ],
+  "Industry/Sector": [
+    "Commerce and Trade",
+    "Construction",
+    "Information & Service Industries",
+    "Manufacturing",
+    "Other Business / Service / Individuals",
+    "Transportation, Storage And Communication"
+  ],
+  "Loan Type": [
+    "Term Loan",
+    "Working Capital "
+  ],
+  "Repayment Frequency": [
+    "Monthly",
+    "Quarterly"
+  ],
+  "Collateral Type & Value": [
+    "Secured"
+  ]
+}

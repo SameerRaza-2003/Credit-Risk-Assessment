@@ -1,0 +1,4 @@
+Business Age (Years),Total Assets,Total Liabilities,Sales/Revenue,Net Income,EBIT,Interest Expense,Loan Amount,Installment Amount,Number of Previous Loans,Tenure (Months),Interest Rate,Industry/Sector,Loan Type,Repayment Frequency,Business Type,Collateral Type & Value
+10,8000000,3000000,12000000,1200000,1600000,150000,1000000,30000,1,24,11.5,Information & Service Industries,Term Loan,Monthly,PVT LTD COMPANIES,Secured
+5,2500000,2000000,3200000,120000,260000,170000,1000000,38000,3,48,18.0,Manufacturing,Working Capital,Quarterly,PARTNERSHIP,Secured
+2,600000,520000,750000,-120000,-50000,90000,500000,28000,5,60,24.0,Construction,Working Capital,Quarterly,PROPRIETORSHIP,Secured
