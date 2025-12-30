@@ -1,4 +1,33 @@
-# Python virtual environments only
+# ---------------------------------
+# Python virtual environments
+# ---------------------------------
 venv/
 env/
 .venv/
+
+# ---------------------------------
+# Python cache files
+# ---------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ---------------------------------
+# Streamlit / runtime artifacts
+# ---------------------------------
+.streamlit/secrets.toml
+
+# ---------------------------------
+# Project-specific folders
+# ---------------------------------
+bank_excels/
+cleaning_pipeline/
+old/
+
+# ---------------------------------
+# OS / editor junk
+# ---------------------------------
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

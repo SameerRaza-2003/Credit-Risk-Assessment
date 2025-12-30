@@ -1,234 +1,294 @@
 
-# Probability of Default (PD) Dashboard
+# 📊 Probability of Default (PD) Risk Scoring System
 
-Interpretable, calibrated credit risk scoring using Logistic Regression and Streamlit
+**Bank-grade SME Credit Risk Scoring using Logistic Regression + Altman Z-Score**
 
 ---
 
-## Overview
+## 1️⃣ Project Overview
 
-This project implements a bank-style Probability of Default (PD) model using Logistic Regression, deployed as an interactive Streamlit dashboard.
+This project implements an **end-to-end Probability of Default (PD) system** for SME credit risk assessment.
 
-Key features:
-- Single borrower PD prediction
-- Bulk PD scoring via CSV upload
-- Risk band classification (Low / Medium / High)
-- Calibrated probability outputs
+It includes:
+- A **trained Logistic Regression PD model**
+- **Altman Z-Score** as a secondary financial distress indicator
+- A **professional Streamlit web application**
+- **Single-borrower scoring** and **bulk CSV scoring**
+- **Authentication & role-based access**
+- **Explainable outputs (PD, E-log, risk bands)**
 
-The modeling pipeline follows credit risk best practices:
+The system follows **real banking risk modeling practices**:
 - No data leakage
-- No post-outcome variables
-- No sensitive or biased features
-- Fully interpretable coefficients
-- Probability calibration using isotonic regression
+- No user-entered engineered ratios
+- Identical preprocessing in training and inference
+- Clear separation between **raw inputs**, **feature engineering**, and **model scoring**
 
 ---
 
-## Model Summary
+## 2️⃣ Folder Structure (IMPORTANT)
 
-- Algorithm: Logistic Regression  
-- Class imbalance handling: `class_weight="balanced"`  
-- Solver: `lbfgs`  
-- Calibration: Isotonic (`CalibratedClassifierCV`, cv=5)  
-- Output: Probability of Default (PD), capped to [5%, 95%]
+```
+
+Probability_Of_Default/
+│
+├── models/
+│   ├── pd_logistic_pipeline.pkl     # Trained sklearn Pipeline (preprocess + model)
+│   ├── logistic_pd.py               # Model loading & scoring
+│   ├── feature_engineering.py       # Derived ratio calculations
+│   ├── altman_z.py                  # Altman Z-score logic
+│
+├── pages/
+│   ├── 1_login.py                   # Login page (streamlit-authenticator)
+│   ├── 2_input_step1.py             # Borrower & loan info (Step 1)
+│   ├── 3_input_step2.py             # Financial statements (Step 2)
+│   ├── 4_results.py                 # PD, Z-score, risk bands, warnings
+│   ├── 5_bulk_scoring.py             # Bulk CSV scoring
+│
+├── utils/
+│   ├── validators.py                # Input sanity checks & warnings
+│
+├── auth.py                          # Authentication config
+├── app.py                           # Streamlit entry point
+├── requirements.txt
+└── README.md
+
+```
 
 ---
 
-## Target Variable
+## 3️⃣ Model Training Summary
 
+### Model Type
+- **Logistic Regression**
+- `class_weight="balanced"`
+- Solver: `lbfgs`
+- Max iterations: `1000`
+
+### Preprocessing (Inside Pipeline)
+- Numerical:
+  - Median imputation
+  - Standard scaling
+- Categorical:
+  - Most-frequent imputation
+  - One-Hot Encoding (`handle_unknown="ignore"`)
+
+### Target
 ```
 
 Default Flag (1/0)
 
-```
-
-- 1 → Default  
-- 0 → Non-default  
-
----
-
-## Columns Dropped (Leakage & Bias Control)
-
-The following columns are explicitly excluded during training:
-
-```
-
-Borrower ID #
-Gender of Owner/CEO
-Repayment History
-Days Past Due (30/60/90 flags)
-Recovery Status
-ORR Score
-Business Location (Province, District, Urban/Rural)
-Disbursement Date
-
 ````
 
----
-
-## Feature Engineering
-
-The following financial ratios are engineered during both training and inference:
-
-| Feature | Formula |
-|------|------|
-| Debt to Assets | Total Liabilities / Total Assets |
-| Interest Coverage | EBIT / Interest Expense |
-| Profit Margin | Net Income / Sales |
-| Working Capital Ratio | (Assets − Liabilities) / Assets |
-
-- Infinite values handled
-- Missing values filled with `0`
-- Raw Working Capital column dropped after ratio computation
+### Output
+- **PD** → Probability of Default
+- **E_log** → Log-odds score
 
 ---
 
-## Input Features
+## 4️⃣ Input Design Philosophy (CRITICAL)
 
-### Numerical
+### ❌ What users DO NOT enter
+- leverage
+- wc_ratio
+- profitability
+- interest_burden
+- bank_balance_ratio
+
+These are **engineered features** and are **computed internally**.
+
+### ✅ What users DO enter (RAW FACTS)
+
+#### Borrower & Loan
+- Business Type
+- Industry / Sector
 - Business Age (Years)
-- Total Assets
-- Total Liabilities
-- Sales / Revenue
-- Net Income
-- EBIT
-- Interest Expense
+- Bank
 - Loan Amount
-- Installment Amount
-- Number of Previous Loans
 - Tenure (Months)
+- Repayment Frequency
 - Interest Rate
 
-### Categorical
-- Industry / Sector
-- Loan Type
-- Repayment Frequency
-- Business Type
-- Collateral Type & Value
+#### Financial Statements
+- Total Assets
+- Total Liabilities
+- Working Capital
+- Average Bank Balance
+- Sales / Revenue
+- EBIT
+- Net Income
+- Interest Expense
 
-Categorical variables are encoded using:
+#### Credit Behaviour
+- Days Past Due (30/60/90 flags) *(free-text, as per bank records)*
 
-```python
-OneHotEncoder(handle_unknown="ignore", drop="first")
+---
+
+## 5️⃣ Feature Engineering (Internal Logic)
+
+Derived automatically in `models/feature_engineering.py`:
+
+```text
+leverage            = Total Liabilities / Total Assets
+wc_ratio            = Working Capital / Total Assets
+profitability       = Net Income / Sales
+interest_burden     = Interest Expense / Sales
+bank_balance_ratio  = Average Bank Balance / Loan Amount
 ````
 
----
-
-## Streamlit App Features
-
-### Single Borrower Scoring
-
-* Interactive form input
-* Instant PD prediction
-* Risk band display
-
-### Bulk CSV Scoring
-
-* CSV upload validation
-* Batch PD prediction
-* Downloadable results file
-
-### Risk Bands
-
-| PD Range | Risk   |
-| -------- | ------ |
-| < 20%    | Low    |
-| 20–50%   | Medium |
-| > 50%    | High   |
+These match **exactly** what the model was trained on.
 
 ---
 
-## Project Structure
+## 6️⃣ Model Scoring Logic
+
+Scoring happens in:
 
 ```
-├── app.py
-├── pd_logistic_model_calibrated.joblib
-├── categorical_metadata.json
-├── requirements.txt
-├── .gitignore
-└── README.md
+models/logistic_pd.py
+```
+
+```python
+PD = model.predict_proba(X)[0, 1]
+E_log = model.decision_function(X)[0]
+```
+
+Relationship:
+
+```
+PD = 1 / (1 + exp(-E_log))
 ```
 
 ---
 
-## Requirements
+## 7️⃣ Risk Banding (Policy Layer)
+
+| PD Band | PD Range | Risk Label     |
+| ------- | -------- | -------------- |
+| A       | < 10%    | Very Low Risk  |
+| B       | 10–20%   | Low Risk       |
+| C1      | 20–30%   | Moderate Risk  |
+| C2      | 30–40%   | Elevated Risk  |
+| C3      | 40–50%   | High Risk      |
+| D       | 50–70%   | Very High Risk |
+| E       | > 70%    | Severe Risk    |
+
+---
+
+## 8️⃣ Altman Z-Score
+
+Implemented in:
 
 ```
-streamlit
-pandas
-numpy
-scikit-learn==1.6.2
-joblib
-matplotlib
+models/altman_z.py
+```
+
+Used as a **secondary financial distress indicator**, not as a replacement for PD.
+
+Interpretation:
+
+* **Z < 3** → Severe distress
+* **3 ≤ Z < 6** → High risk
+* **6 ≤ Z < 10** → Moderate risk
+* **Z ≥ 10** → Low risk
+
+---
+
+## 9️⃣ Validation & Warnings (Non-Blocking)
+
+The system issues **warnings**, not hard rejections:
+
+Examples:
+
+* Total Liabilities > Total Assets
+* Loan Amount > Total Assets
+* Zero or very low sales
+* Zero interest rate
+
+These are **credit review flags**, not system errors.
+
+---
+
+## 🔟 Bulk CSV Scoring
+
+### Required CSV Columns
+
+```csv
+Business Type,Industry/Sector,Business Age (Years),Bank,Loan Amount,
+Tenure (Months),Repayment Frequency,Interest Rate,
+Total Assets,Total Liabilities,Working Capital,Average Bank Balance,
+Sales/Revenue,EBIT,Net Income,Interest Expense,
+Days Past Due (30/60/90 flags)
+```
+
+The same:
+
+* feature engineering
+* preprocessing
+* model
+  is used for **single and bulk scoring** (no mismatch).
+
+---
+
+## 1️⃣1️⃣ Known Modeling Limitation (IMPORTANT)
+
+### DPD Encoding
+
+`Days Past Due (30/60/90 flags)` is treated as a **categorical string**.
+
+This can cause:
+
+* Similar DPD patterns to be treated differently
+* Some clean borrowers to receive higher PDs
+
+This is a **data representation limitation**, not a coding error.
+
+**Recommended future improvement:**
+
+* Parse DPD into numeric severity features (30/60/90 counts)
+* Retrain model
+
+---
+
+## 1️⃣2️⃣ Authentication
+
+* Implemented via `streamlit-authenticator`
+* Session-based login
+* Demo credentials (for academic use):
+
+```
+admin / admin123
+analyst / riskpd
 ```
 
 ---
 
-## Running the App
+## 1️⃣3️⃣ How to Run
 
-```
+```bash
 pip install -r requirements.txt
 streamlit run app.py
 ```
 
 ---
 
-## Intended Use
+## 1️⃣4️⃣ When You Reopen This Project (IMPORTANT)
 
-* Credit risk assessment
-* SME / corporate lending analysis
-* PD benchmarking
-* Academic and educational use
+If you are a future version of me or an AI assistant:
 
-Note: This project is not a regulatory-approved IRB system.
-
----
-
-## Design Principles
-
-* Interpretable (no black-box models)
-* Leakage-free training
-* Bias-aware feature selection
-* Bank-aligned probability calibration
-* Lightweight and production-ready
-
-````
+1. Start by reading this README
+2. Inspect `models/pd_logistic_pipeline.pkl`
+3. Use `model.feature_names_in_` to verify inputs
+4. Do NOT ask users for engineered ratios
+5. Do NOT rebuild preprocessing outside the pipeline
+6. Treat PD as a **probabilistic estimate**, not a decision rule
 
 ---
 
-## ✅ 2️⃣ `requirements.txt`
+## 1️⃣5️⃣ Final Statement
 
-```txt
-streamlit
-pandas
-numpy
-scikit-learn==1.6.2
-joblib
-matplotlib
-````
+This system is:
 
----
-
-## ✅ 3️⃣ `.gitignore` (ONLY venv ignored)
-
-```gitignore
-venv/
-env/
-.venv/
-```
-
----
-
-## ✅ Final Repo Will Look Like This
-
-```
-pd-dashboard/
-├── app.py
-├── pd_logistic_model_calibrated.joblib
-├── categorical_metadata.json
-├── requirements.txt
-├── .gitignore
-└── README.md
-```
-
----
+* **Technically correct**
+* **Professionally designed**
+* **Bank-realistic**
+* **Defensible in exams, interviews, and demos**
